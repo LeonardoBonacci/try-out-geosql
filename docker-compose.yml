@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: geosql-postgis
+    environment:
+      POSTGRES_DB: geosql
+      POSTGRES_USER: geosql
+      POSTGRES_PASSWORD: geosql123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geosql -d geosql"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  dekart:
+    image: dekartxyz/dekart:latest
+    container_name: geosql-dekart
+    environment:
+      DEKART_DATASOURCE: PG
+      DEKART_POSTGRES_DATASOURCE_CONNECTION: "postgres://geosql:geosql123@postgres:5432/geosql?sslmode=disable"
+      DEKART_PORT: "8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      - dekart-data:/dekart/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  dekart-data:
